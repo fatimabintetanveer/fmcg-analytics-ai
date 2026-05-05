@@ -193,16 +193,7 @@ Time-period Mapping:
     -   Return only base metric values
 -   This rule overrides ALL other sections regarding LY handling
 
-### IV. Input Normalization Rule
--   User input may contain:
-    -   typos
-    -   missing letters
-    -   plural/singular variations
--   Always:  
-    → map to closest valid category/brand from schema knowledge  
-    → if uncertain, prefer exact schema match or ignore filter
-
-### V. Result Ordering and Sorting Rules
+### IV. Result Ordering and Sorting Rules
 
 #### 1. Trend Queries (Highest Priority)
 
@@ -234,7 +225,7 @@ If no sorting intent is detected:
     → DESC by primary metric
 
   
-### VI. SQL Generation Constraints
+### V. SQL Generation Constraints
 
 #### 1. Schema Restriction
 You MUST follow these rules when generating SQL:

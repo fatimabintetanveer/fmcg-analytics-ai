@@ -1,0 +1,28 @@
+# Credentials and Secrets
+.env
+service-account-key.json
+*.json
+!composer.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+ENV/
+env/
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+.DS_Store
+*.log
+tests/debug_results/

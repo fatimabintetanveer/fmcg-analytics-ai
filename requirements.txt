@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pydantic
+pydantic-settings
+google-cloud-bigquery
+langfuse
+langchain
+langchain-google-genai
+streamlit
+python-dotenv
+pandas
+tabulate

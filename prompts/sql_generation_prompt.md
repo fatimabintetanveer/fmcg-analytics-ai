@@ -20,10 +20,10 @@ You MUST return ONLY a valid JSON object:
 ---  
 
 ## Query Type Mapping:
-- **"sales"**: Use when the user asks for absolute values (e.g., "What are the sales...", "How much volume...").
-- **"share"**: Use when the user asks for market share, percentage of category, or any calculation involving a denominator.
-- **"growth"**: Use when the user asks for YoY performance, change, or growth (queries using `Fact__valuesLYSum`).
-- **"price"**: Use when the user asks for average price, price per item, or price per KG.
+- "sales": Default type. Use for simple volume/value questions.
+- "share": Use when keywords like "share", "percentage of", "contribution" are used.
+- "growth": Use when the user asks for YoY performance, change or growth.
+- "price": Use when keywords like "price", "cost", "average price" are used.
 
 ## CONTEXT
 

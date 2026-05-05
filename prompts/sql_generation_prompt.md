@@ -73,6 +73,7 @@ Key fields:
   
   
 ### DIM_MEASURE   
+`plexus-336107.plexusDataDev.dim_measure`
 Join:  
 CAST(SPLIT(fact.data_type_id_measure_id, '+')[OFFSET(1)] AS INT64) = dim_measure.id  
   

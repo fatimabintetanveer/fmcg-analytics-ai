@@ -10,8 +10,12 @@ os.environ["LANGFUSE_PUBLIC_KEY"] = settings.LANGFUSE_PUBLIC_KEY
 os.environ["LANGFUSE_SECRET_KEY"] = settings.LANGFUSE_SECRET_KEY
 os.environ["LANGFUSE_BASE_URL"] = settings.LANGFUSE_BASE_URL 
 
-# Initialize Langfuse Client
-langfuse_client = get_client()
+# Initialize Langfuse Client explicitly with credentials
+langfuse_client = Langfuse(
+    public_key=settings.LANGFUSE_PUBLIC_KEY,
+    secret_key=settings.LANGFUSE_SECRET_KEY,
+    host=settings.LANGFUSE_BASE_URL
+)
 
 # Initialize Langfuse Callback Handler 
 langfuse_handler = CallbackHandler()

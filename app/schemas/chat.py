@@ -23,6 +23,12 @@ class ChatResponse(BaseModel):
     numerator_data: List[Dict[str, Any]]
     denominator_data: Optional[List[Dict[str, Any]]] = None
     calculated_results: List[Dict[str, Any]]
+    trace_id: Optional[str] = None
+
+class FeedbackRequest(BaseModel):
+    trace_id: str
+    score: float = Field(..., description="Score between 0 and 1")
+    comment: Optional[str] = None
 
 class ErrorResponse(BaseModel):
     error: str

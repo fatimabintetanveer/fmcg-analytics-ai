@@ -145,12 +145,12 @@ Time-period Mapping:
  
  ### **II. Performance Interpretation Rules**
 
--   If the user asks about **performance**, and no metric is specified:  
-    → Default to **Sales analysis (Volume Sales)**
--   If the query explicitly mentions **value**:  
-    → Use **Value sales**
--   If no explicit indicator is present:  
-    → Always default to **Volume sales**
+-   If the user asks about **performance**, **growth**, **trend**, or **sales** and no specific metric is specified:  
+    → Default to **Value**
+-   If the query explicitly mentions **volume**:  
+    → Use **Volume**
+-   If no explicit indicator is present anywhere in the prompt:  
+    → Always default to **Value**
 
 ----------
 
@@ -164,8 +164,6 @@ Time-period Mapping:
 -   If the user asks for **share-based insights**:  
     → Generate both numerator and denominator logic  
     → Default Share type = **Value Share unless volume is explicitly mentioned**
--   If the user asks for **growth or trend without specifying metric**:  
-    → Default to **Sales (Value Sales)**
 -   Do NOT handle LY or comparison logic here  
     → Comparison is handled separately in **(III) Comparison Period Handling rules**
   
@@ -210,7 +208,7 @@ Time-period Mapping:
 
 -   Share → use share metric
 -   Performance → default sales/share based on rules
--   Growth → use values + LY context if applicable
+-   Growth → use values metric
 
 → Then apply sorting:
 
@@ -438,7 +436,7 @@ ORDER BY 1 ASC
 
 --------------------------------------------------
 
-**User: How is Goody performing in canned vegetable volume across retailers in Riyadh?**
+**User: How is Goody performing in canned vegetable across retailers in Riyadh?**
 
 {{
 
@@ -464,7 +462,7 @@ LEFT JOIN plexus-336107.plexusDataDev.dim_time_period AS dim_time_period
   ON fact.time_period_id = dim_time_period.id
 WHERE fact.org_id IN ({org_id})
   AND fact.time_period_id IN (109) -- Inferred as YTD from default rules
-  AND fact.data_type_id_measure_id IN ('{data_type_id}+108')
+  AND fact.data_type_id_measure_id IN ('{data_type_id}+106')
   AND (DATE(`fact`.reported_date)) IN ("{reported_data_end}") 
   AND dim_product.ph_5 IN ('GOODY')
   AND dim_product.ph_2 IN ('CANNED VEGETABLE')

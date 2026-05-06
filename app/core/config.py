@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     # GCP Config
     GOOGLE_APPLICATION_CREDENTIALS: str
+    DATA_SOURCE: str
 
     # OpenAI Config
     OPENAI_API_KEY: str

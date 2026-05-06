@@ -1,4 +1,6 @@
 import logging
+import json
+import os
 from typing import Optional
 
 from langchain_openai import ChatOpenAI
@@ -37,6 +39,27 @@ prompt = ChatPromptTemplate.from_messages([
 
 chain = prompt | llm | parser
 
+def load_metadata(org_id: int):
+    filepath = f"app/metadata/org_{org_id}_metadata.json"
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logger.error(f"Metadata file not found: {filepath}")
+        return None
+
+def format_metadata(metadata: dict):
+    if not metadata:
+        return "", "", "", "", ""
+    
+    product_meta = "\n".join([f"- {k} → {v}" for k, v in metadata.get("dimension_metadata", {}).get("product", {}).items()])
+    geo_meta = "\n".join([f"- {k} → {v}" for k, v in metadata.get("dimension_metadata", {}).get("geography", {}).items()])
+    measure_map = "\n".join([f"- {k} → {v}" for k, v in metadata.get("measure_map", {}).items()])
+    time_period_map = "\n".join([f"- {k} → {v}" for k, v in metadata.get("time_period_map", {}).items()])
+    brands_list = ", ".join([f"'{b}'" for b in metadata.get("brands", [])])
+    
+    return product_meta, geo_meta, measure_map, time_period_map, brands_list
+
 def generate_sql(question: str, org_id: int, data_type_id: int, reported_data_end: str, error_message: Optional[str] = None) -> SQLResponse:
     try:
         error_context = ""
@@ -44,6 +67,24 @@ def generate_sql(question: str, org_id: int, data_type_id: int, reported_data_en
             error_context = f"WARNING: Your previous SQL attempt failed with this BigQuery error:\n{error_message}\n\nPlease fix the query and ensure it adheres to the schema."
             logger.warning(f"Retrying SQL generation due to error: {error_message}")
             
+#         metadata = load_metadata(org_id)
+#         product_meta, geo_meta, measure_map, time_period_map, brands_list = format_metadata(metadata)
+# 
+#         result = chain.invoke({
+#             "question": question, 
+#             "org_id": org_id,
+#             "data_type_id": data_type_id,
+#             "reported_data_end": reported_data_end,
+#             "error_context": error_context,
+#             "data_source": settings.DATA_SOURCE,
+#             "product_metadata": product_meta,
+#             "geography_metadata": geo_meta,
+#             "measure_map": measure_map,
+#             "time_period_map": time_period_map,
+#             "brands_list": brands_list
+#         })
+
+        # --- PREVIOUS VERSION ---
         result = chain.invoke({
             "question": question, 
             "org_id": org_id,

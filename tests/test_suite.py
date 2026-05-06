@@ -11,12 +11,12 @@ def json_serial(obj):
         return obj.isoformat()
     return str(obj)
 
-# Configure logging to be quiet during tests
-logging.basicConfig(level=logging.ERROR)
+# Configure logging to see where time is spent
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 QUESTIONS = [
     "What is the average price of TUNA in Goody?",
-    "Between 200 GRAM and 400 GRAM, which pack size is growing the most in CANNED MUSHROOMS in goody?",
+    "Between 200 GRAM and 400 GRAM, which pack size is growing the most in 'CANNED MUSHROOMS' in goody?",
     "How is TIM HORTONS performing in INSTANT COFFEE volume across different retailers in Jeddah?",
     "What is the monthly trend of Goody’s Tuna sales over the last 12 months?",
     "What is Goody’s volume share in the TUNA category?",

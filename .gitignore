@@ -3,6 +3,7 @@
 service-account-key.json
 *.json
 !composer.json
+!app/metadata/org_*.json
 
 # Python
 __pycache__/

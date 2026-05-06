@@ -1,0 +1,52 @@
+{
+  "org_id": 4,
+  "brands": [
+    "GOODY",
+    "TREVA",
+    "COFIQUE",
+    "TIM HORTONS",
+    "WELLO",
+    "LIBBY'S"
+  ],
+  "dimension_metadata": {
+    "product": {
+      "ph_2": "Category",
+      "ph_3": "Sub Category",
+      "ph_4": "Company",
+      "ph_5": "Brand",
+      "ph_13": "Pack Size",
+      "ph_26": "SKU",
+      "ph_27": "Derived SKU"
+    },
+    "geography": {
+      "h1_2": "Channel",
+      "h1_3": "Region",
+      "h1_4": "Retailer",
+      "h1_5": "Country",
+      "h1_6": "City",
+      "h1_7": "Store Type",
+      "h1_8": "Store"
+    }
+  },
+  "measure_map": {
+    "106": "Value",
+    "107": "Items",
+    "108": "Volume (KG/Ltr)",
+    "109": "Cases",
+    "110": "Price per Item",
+    "111": "Price per KG"
+  },
+  "time_period_map": {
+    "108": "Monthly",
+    "109": "YTD",
+    "145": "Quarter",
+    "146": "Bimonthly",
+    "147": "FY",
+    "148": "MAT",
+    "149": "Weekly",
+    "174": "P3M",
+    "175": "P6M",
+    "176": "P9M",
+    "191": "P2M"
+  }
+}

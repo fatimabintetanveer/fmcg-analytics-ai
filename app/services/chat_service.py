@@ -7,6 +7,7 @@ from app.services.calc_service import calculate_metrics
 
 logger = logging.getLogger(__name__)
 
+
 def ask_question(question: str, org_id: int, data_type_id: int, reported_data_end: str):
     max_retries = 2
     last_error = None
@@ -54,7 +55,7 @@ def ask_question(question: str, org_id: int, data_type_id: int, reported_data_en
         except exceptions.BadRequest as e:
             last_error = str(e)
             
-            # Check for missing column error which the LLM usually can't fix if it hallucinated a column
+            # Check for missing column error 
             if "Not found: Column" in last_error or "column not found" in last_error.lower():
                 logger.error(f"Missing column detected: {last_error}")
                 return {

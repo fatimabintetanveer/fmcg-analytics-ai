@@ -1,23 +1,28 @@
 from google.cloud import bigquery
 from langfuse import Langfuse
 from app.core.config import settings
-
+from langfuse import get_client, observe
+from langfuse.langchain import CallbackHandler
 import os
 
-# Initialize Langfuse Client
-langfuse_client = Langfuse(
-    public_key=settings.LANGFUSE_PUBLIC_KEY,
-    secret_key=settings.LANGFUSE_SECRET_KEY,
-    host=settings.LANGFUSE_HOST
-)
+# Set environment variables for Langfuse
+os.environ["LANGFUSE_PUBLIC_KEY"] = settings.LANGFUSE_PUBLIC_KEY
+os.environ["LANGFUSE_SECRET_KEY"] = settings.LANGFUSE_SECRET_KEY
+os.environ["LANGFUSE_BASE_URL"] = settings.LANGFUSE_BASE_URL 
 
-# Inject Google Application Credentials into the system environment for implicit auth
-if settings.GOOGLE_APPLICATION_CREDENTIALS:
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS
+# Initialize Langfuse Client
+langfuse_client = get_client()
+
+# Initialize Langfuse Callback Handler 
+langfuse_handler = CallbackHandler()
+
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = settings.GOOGLE_APPLICATION_CREDENTIALS
 
 # Initialize BigQuery Client
 bq_client = bigquery.Client()
 
+@observe(as_type="span")
 def run_query(sql: str):
     """Executes a SQL query on BigQuery and returns the results as a list of dicts."""
     query_job = bq_client.query(sql)

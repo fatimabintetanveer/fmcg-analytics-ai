@@ -4,7 +4,7 @@ class Settings(BaseSettings):
     # Langfuse Config
     LANGFUSE_PUBLIC_KEY: str
     LANGFUSE_SECRET_KEY: str
-    LANGFUSE_HOST: str = "https://cloud.langfuse.com"
+    LANGFUSE_BASE_URL: str 
 
     # GCP Config
     GOOGLE_APPLICATION_CREDENTIALS: str
@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # OpenAI Config
     OPENAI_API_KEY: str
     
-    # App Config
+    # LLM Config
     DEBUG: bool = True
     LLM_MODEL: str = "gpt-4o-mini"
     LLM_TEMPERATURE: float = 0.0

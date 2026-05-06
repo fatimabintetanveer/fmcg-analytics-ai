@@ -1,8 +1,11 @@
 from typing import Union
 import traceback
 from fastapi import FastAPI
+from langfuse import observe
 from app.services.chat_service import ask_question
 from app.schemas.chat import QuestionRequest, ChatResponse, ErrorResponse
+
+from app.core.clients import langfuse_client
 
 app = FastAPI(
     title="FMCG Chat API",
@@ -11,12 +14,15 @@ app = FastAPI(
 )
 
 @app.post("/ask", response_model=Union[ChatResponse, ErrorResponse])
+@observe(name="Ask Endpoint")
 def ask_endpoint(payload: QuestionRequest):
     """
     Process a natural language question and return calculated metrics.
     """
     try:
+
         result = ask_question(payload.question, payload.org_id, payload.data_type_id, payload.reported_data_end)
+        
         return result
         
     except Exception as e:

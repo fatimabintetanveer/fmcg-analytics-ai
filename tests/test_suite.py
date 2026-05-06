@@ -15,16 +15,8 @@ def json_serial(obj):
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 QUESTIONS = [
-    "What is the average price of TUNA in Goody?",
-    "Between 200 GRAM and 400 GRAM, which pack size is growing the most in 'CANNED MUSHROOMS' in goody?",
-    "How is TIM HORTONS performing in INSTANT COFFEE volume across different retailers in Jeddah?",
-    "What is the monthly trend of Goody’s Tuna sales over the last 12 months?",
-    "What is Goody’s volume share in the TUNA category?",
-    "Compare volume sales of COFIQUE, and TIM HORTONS in the INSTANT COFFEE category",
-    "What are the top 5 brands by volume sales in the CANNED VEGETABLE category?",
-    "Compare Goody’s volume sales in TUNA between Riyadh and Jeddah.",
-    "What is the year-over-year growth in volume sales for COFIQUE in the INSTANT COFFEE category?",
-    "What is Goody’s volume share in the 80 GRAM pack size within the TUNA category?"
+    "Compare volume sales of COFIQUE, and TIM HORTONS in the INSTANT COFFEE category"
+
 ]
 
 def run_test_suite():

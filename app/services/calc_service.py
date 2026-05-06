@@ -1,8 +1,10 @@
 import logging
+from langfuse import observe
 from app.core.constants import COLUMN_MAPPING
 
 logger = logging.getLogger(__name__)
 
+@observe(as_type="span")
 def calculate_metrics(query_type: str, numerator_data: list, denominator_data: list = None):
     results = []
     

@@ -87,7 +87,7 @@ if st.session_state.last_response:
         st.error(f"❌ {data.get('error')}")
         st.info(data.get("details", ""))
     else:
-        # 1. THE MAIN ANSWER
+        # 1. Main Answer
         st.markdown('<div class="answer-card">', unsafe_allow_html=True)
         st.subheader("✅ AI Analysis Result")
         if data.get("calculated_results"):
@@ -96,7 +96,7 @@ if st.session_state.last_response:
             st.write("Data retrieved successfully, but no metrics were calculated.")
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # 2. IMPROVED FEEDBACK WORKFLOW
+        # 2. Feedback Workflow
         st.write("### 📝 Rate this analysis")
         if not st.session_state.feedback_submitted:
             
@@ -110,7 +110,7 @@ if st.session_state.last_response:
                     st.session_state.selected_rating = i
                     st.rerun()
             
-            # Step 2: Comment Box (Below Stars)
+            # Step 2: Comment Box 
             st.write("Step 2: Add details")
             user_comment = st.text_area("", key="feedback_comment", placeholder="What could be improved?", label_visibility="collapsed")
             
@@ -140,7 +140,7 @@ if st.session_state.last_response:
 
         st.write("---")
 
-        # 3. TECHNICAL DEEP DIVE
+        # 3. Technical Details
         with st.expander("🔍 View Technical Details"):
             tab1, tab2 = st.tabs(["SQL Queries", "Raw JSON Data"])
             with tab1:

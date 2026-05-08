@@ -77,7 +77,7 @@ def ask_question(question: str, org_id: int, data_type_id: int, reported_data_en
         return {
             "error": "Max retries reached",
             "details": last_error,
-            "message": "Tried to fix the SQL query but kept getting errors."
+            "message": "Sorry I could not find any data for this query. Try asking in a different way." 
         }
     
     finally:

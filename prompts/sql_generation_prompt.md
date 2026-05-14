@@ -12,7 +12,7 @@ You MUST return ONLY a valid JSON object:
   
 {{  
 "numerator_query": "<SQL>",  
-"denominator_query": "<SQL or null>",
+"denominator_query": null, (Set to null for sales, growth, and price. ONLY provide SQL for share queries.)
 "query_type": "<sales | share | growth | price>"
 }}
 
@@ -25,81 +25,65 @@ You MUST return ONLY a valid JSON object:
 - "growth": Use when the user asks for YoY performance, change or growth.
 - "price": Use when keywords like "price", "cost", "average price" are used.
 
+## RESOLVED ENTITIES INSTRUCTIONS
+The "Resolved Entities" section below is a JSON object containing fuzzy search matches.
+- **Cross-Reference:** Compare the `input` word in the JSON against the user's original query. 
+- **Filtering:** If a match seems **irrelevant** to the context (e.g., matching the word 'Canned' to 'CANNED FISH' when the user is asking for 'canned mushrooms'), you MUST ignore it.
+- **Strict Matching:** Use the exact `matched` string for your SQL WHERE clauses.
+- **Multiple Values:** If multiple **relevant** items are found for the same category, use an `IN` clause. **IMPORTANT:** Always use double quotes for string literals in the `IN` clause to safely handle apostrophes (e.g., `WHERE ph_5 IN ("BRAND A", "BRAND B'S")`).
+
 ## CONTEXT
 
 ### Data Model Overview
-  
 
-### FACT TABLE  
-`plexus-336107.plexusDataDev.fact_*`  
-  
-Contains:  
-- reported_date  
-- org_id  
-- time_period_id  
-- data_type_id_measure_id  
-- product_id, geography_id  
-- values, valuesLY  
-- denomValue, denomValueLY
-  
-### DIM_PRODUCT  
-`plexus-336107.plexusDataDev.dim_product`  
-  
-Join:  
-fact.product_id = dim_product.id  
-  
-Key Fields:  
-- ph_2 → Category  
-- ph_4 → Company  
-- ph_5 → Brand  
-- ph_13 → Pack Size  
-- ph_26 → SKU  
-- ph_27 → Derived SKU  
-  
-### DIM_GEOGRAPHY  
-`plexus-336107.plexusDataDev.dim_geography`  
-  
-Join:  
-fact.geography_id = dim_geography.id  
-  
-Key fields:
-- h1_2 → Channel  
-- h1_3 → Region  
-- h1_4 → Retailer  
-- h1_5 → Country  
-- h1_6 → City  
-- h1_7 → Store Type  
-- h1_8 → Store  
-  
-  
-### DIM_MEASURE   
-`plexus-336107.plexusDataDev.dim_measure`
-Join:  
-CAST(SPLIT(fact.data_type_id_measure_id, '+')[OFFSET(1)] AS INT64) = dim_measure.id  
-  
-Measure Mapping:  
-- Note: All measure IDs must be prefixed with the data type ID variable `{data_type_id}+` in the WHERE clause (e.g., '{data_type_id}+106').
-- 106 → Value  
-- 108 → Volume  
-- 109 → Cases  
-- 110 → Price per Item  
-- 111 → Price per KG  
-  
-### DIM_TIME_PERIOD  
-  
-Join:  
-fact.time_period_id = dim_time_period.id  
-  
-Time-period Mapping:  
-- 108 → Monthly  
-- 109 → YTD  
-- 148 → MAT  
-- 146 → Bimonthly  
-- 191 → P2M  
-- 174 → P3M  
-- 175 → P6M  
+Use the following schema structure to construct your queries. Always treat the **Fact Table** as the central source of metrics and perform `LEFT JOIN` operations with dimensions to apply filters and retrieve labels.
+
+### 1. FACT TABLE (Metric & Transaction Source)
+**Path:** `{data_source}.fact_*`  
+This table contains all raw numerical data and comparison values.
+- **Key Identifiers:** `reported_date`, `org_id`, `time_period_id`, `product_id`, `geography_id`.
+- **Primary Metrics:** `values` (Current Period), `valuesLY` (Last Year), `denomValue` (Used for Share/Price).
+- **Logic:** You must filter by `org_id` in every query to ensure correct data isolation.
+
+### 2. DIM_PRODUCT (Product Hierarchy)
+**Path:** `{data_source}.dim_product`  
+Filter the dataset by category, brand, or SKU using these levels:
+{product_meta}
+
+### 3. DIM_GEOGRAPHY (Geography Hierarchy)
+**Path:** `{data_source}.dim_geography`  
+Isolate data by regions, cities, retailers, or store types:
+{geo_meta}
+
+### 4. DIM_MEASURE (Measure Mapping)
+**Path:** `{data_source}.dim_measure`  
+**Usage Rules:**
+- Map metrics to IDs using the mapping below.
+- **Strict ID Format:** Prefix every measure ID with the data type variable (e.g., `'{data_type_id}+106'`).
+{measure_map}
+
+### 5. DIM_TIME_PERIOD (Time Granularity)
+**Path:** `{data_source}.dim_time_period`  
+Identify the time granularity of the report (e.g., Monthly, YTD, MAT):
+{time_period_map}
+
+---
+
+### Data Model Relationships (Join Map)
+Always use `LEFT JOIN` to connect the dimensions to the Fact Table using these keys:
+- **Product:** `fact.product_id = dim_product.id`
+- **Geography:** `fact.geography_id = dim_geography.id`
+- **Measure:** `CAST(SPLIT(fact.data_type_id_measure_id, '+')[OFFSET(1)] AS INT64) = dim_measure.id`
+- **Time Period:** `fact.time_period_id = dim_time_period.id`
+
+---
   
 ## Business Logic 
+  
+- **"My Brand" Context:**
+- If the user mentions "my brand", "my brands", or "my brand performance", apply a SQL filter: `dim_product.ph_5 IN ({brands_list})`. 
+- **CRITICAL:** The brand list contains strings with apostrophes. You MUST use **double quotes** for these values in your SQL (e.g., `IN ("LIBBY'S", "GOODY")`). Never use single quotes for brand filters.
+- If a specific category is also mentioned (e.g., "my brand in tuna cans"), apply the brand filter AND the category filter together in the `WHERE` clause.
   
 ### I.  Time Period Interpretation Rules
 
@@ -114,10 +98,10 @@ Time-period Mapping:
       
 2. **Monthly Override:**
 -   If the user explicitly mentions:  
-    “this month”, “current month”, “latest month”, or any variation  
-    OR a specific month (e.g., “Aug’25”, “Sep 2024”)
+    “this month”, “current month”, “latest month”, “last X months”, or specific months (e.g., “Aug’25”)
     
-    → Interpret as **Monthly (MTD) level**
+    → Interpret as **Monthly (MTD) level** (e.g., `time_period_id 108`).
+    → For "last X months", use a `BETWEEN` date range to include exactly X full months ending *before* the latest month if the user implies prior periods, or ending *at* the latest month if they ask for current. (Example: "last 2 months" when latest is March should be BETWEEN Jan and Feb).
     
 -   This rule applies even if:
     -   a comparison period (vsLY, vsPP) is present
@@ -193,11 +177,11 @@ Time-period Mapping:
 
 ### IV. Result Ordering and Sorting Rules
 
-#### 1. Trend Queries (Highest Priority)
+#### 1. Trend & Multi-Period Queries (HIGHEST PRIORITY — overrides all other sort rules)
 
--   If query involves trend / time-series analysis:
-    -   sort ONLY by `reported_date ASC`
-    -   Ignore all ranking or metric-based sorting rules
+- If the query spans **multiple time periods** (e.g., "last 2 months", "Jan and Feb", "over time", "last X months", or a `BETWEEN` date filter is used):
+    - You MUST sort by `reported_date ASC`.
+    - This rule overrides all other sorting rules including the Default Sorting Rule.
 
 #### 2. Ranking / Top / Bottom Queries
 
@@ -217,7 +201,7 @@ Time-period Mapping:
 
 #### 3. Default Sorting Rule
 
-If no sorting intent is detected:
+If no sorting intent is detected AND the query is NOT a multi-period query:
 
 -   Default sorting:  
     → DESC by primary metric
@@ -264,6 +248,10 @@ When interpreting metrics:
 -   Share queries MUST generate:
     -   numerator (filtered segment)
     -   denominator (baseline)
+
+#### 4. Quoting and Strings
+- **Apostrophes:** Brand names (e.g., LIBBY'S) contain apostrophes. To prevent syntax errors, you MUST use **double quotes** (`"`) for all string literals in `WHERE` and `IN` clauses (e.g., `dim_product.ph_5 IN ("LIBBY'S", "GOODY")`). 
+- **Consistency:** Never use single quotes (`'`) for entity names or labels.
 
 **Denominator Rule (Baseline Context):**
     -   The denominator represents the baseline for the share calculation.
@@ -320,14 +308,14 @@ SELECT
   dim_product.ph_13 AS DimProduct__ph_13,
   dim_geography.h1_6 AS DimGeography__h1_6,
   SUM(fact.values) AS Fact__valuesSum
-FROM `plexus-336107.plexusDataDev.fact_*` AS fact
-LEFT JOIN plexus-336107.plexusDataDev.dim_product AS dim_product 
+FROM `{data_source}.fact_*` AS fact
+LEFT JOIN {data_source}.dim_product AS dim_product 
   ON fact.product_id = dim_product.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_measure AS dim_measure 
+LEFT JOIN {data_source}.dim_measure AS dim_measure 
   ON CAST(SPLIT(fact.data_type_id_measure_id, '+')[OFFSET(1)] AS INT64) = dim_measure.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_time_period AS dim_time_period 
+LEFT JOIN {data_source}.dim_time_period AS dim_time_period 
   ON fact.time_period_id = dim_time_period.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_geography AS dim_geography 
+LEFT JOIN {data_source}.dim_geography AS dim_geography 
   ON fact.geography_id = dim_geography.id
 WHERE fact.org_id IN ({org_id})
   AND fact.time_period_id IN (109) -- Inferred as YTD from default rules
@@ -353,14 +341,14 @@ SELECT
   dim_geography.h1_6 AS DimGeography__h1_6,
   SUM(fact.values) AS Fact__valuesSum,
   SUM(fact.denomValue) AS Fact__denomValue
-FROM `plexus-336107.plexusDataDev.fact_*` AS fact
-LEFT JOIN plexus-336107.plexusDataDev.dim_product AS dim_product 
+FROM `{data_source}.fact_*` AS fact
+LEFT JOIN {data_source}.dim_product AS dim_product 
   ON fact.product_id = dim_product.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_measure AS dim_measure 
+LEFT JOIN {data_source}.dim_measure AS dim_measure 
   ON CAST(SPLIT(fact.data_type_id_measure_id, '+')[OFFSET(1)] AS INT64) = dim_measure.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_time_period AS dim_time_period 
+LEFT JOIN {data_source}.dim_time_period AS dim_time_period 
   ON fact.time_period_id = dim_time_period.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_geography AS dim_geography 
+LEFT JOIN {data_source}.dim_geography AS dim_geography 
   ON fact.geography_id = dim_geography.id
 WHERE fact.org_id IN ({org_id})
   AND fact.time_period_id IN (109) -- Inferred as YTD from default rules
@@ -390,12 +378,12 @@ SELECT
   dim_product.ph_2 AS DimProduct__ph_2,
   SUM(fact.values) AS Fact__valuesSum,
   SUM(fact.valuesLY) AS Fact__valuesLYSum
-FROM `plexus-336107.plexusDataDev.fact_*` AS fact
-LEFT JOIN plexus-336107.plexusDataDev.dim_product AS dim_product 
+FROM `{data_source}.fact_*` AS fact
+LEFT JOIN {data_source}.dim_product AS dim_product 
   ON fact.product_id = dim_product.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_measure AS dim_measure 
+LEFT JOIN {data_source}.dim_measure AS dim_measure 
   ON CAST(SPLIT(fact.data_type_id_measure_id, '+')[OFFSET(1)] AS INT64) = dim_measure.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_time_period AS dim_time_period 
+LEFT JOIN {data_source}.dim_time_period AS dim_time_period 
   ON fact.time_period_id = dim_time_period.id
 WHERE fact.org_id IN ({org_id})
   AND fact.time_period_id IN (109) -- Inferred as YTD from default rules
@@ -407,30 +395,7 @@ GROUP BY 1,2,3,4,5
 ORDER BY Fact__valuesSum DESC
 ",
 
-"denominator_query": "
-SELECT
-  fact.reported_date AS Fact__reporteddate,
-  dim_measure.label AS DimMeasure__label,
-  dim_time_period.label AS DimTimePeriod__label,
-  dim_product.ph_2 AS DimProduct__ph_2,
-  SUM(fact.values) AS Fact__valuesSum,
-  SUM(fact.denomValue) AS Fact__denomValue,
-  SUM(fact.valuesLY) AS Fact__valuesLYSum
-FROM `plexus-336107.plexusDataDev.fact_*` AS fact
-LEFT JOIN plexus-336107.plexusDataDev.dim_product AS dim_product 
-  ON fact.product_id = dim_product.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_measure AS dim_measure 
-  ON CAST(SPLIT(fact.data_type_id_measure_id, '+')[OFFSET(1)] AS INT64) = dim_measure.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_time_period AS dim_time_period 
-  ON fact.time_period_id = dim_time_period.id
-WHERE fact.org_id IN ({org_id})
-  AND fact.time_period_id IN (109) -- Inferred as YTD from default rules
-  AND fact.data_type_id_measure_id IN ('{data_type_id}+108')
-  AND (DATE(`fact`.reported_date)) IN ("{reported_data_end}")
-  AND dim_product.ph_2 IN ('INSTANT COFFEE')
-GROUP BY 1,2,3,4
-ORDER BY 1 ASC
-"
+"denominator_query": null
 }}
 
 
@@ -451,14 +416,14 @@ SELECT
   dim_product.ph_2 AS DimProduct__ph_2,
   SUM(fact.values) AS Fact__valuesSum,
   SUM(fact.valuesLY) AS Fact__valuesLYSum
-FROM `plexus-336107.plexusDataDev.fact_*` AS fact
-LEFT JOIN plexus-336107.plexusDataDev.dim_product AS dim_product 
+FROM `{data_source}.fact_*` AS fact
+LEFT JOIN {data_source}.dim_product AS dim_product 
   ON fact.product_id = dim_product.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_geography AS dim_geography 
+LEFT JOIN {data_source}.dim_geography AS dim_geography 
   ON fact.geography_id = dim_geography.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_measure AS dim_measure 
+LEFT JOIN {data_source}.dim_measure AS dim_measure 
   ON CAST(SPLIT(fact.data_type_id_measure_id, '+')[OFFSET(1)] AS INT64) = dim_measure.id
-LEFT JOIN plexus-336107.plexusDataDev.dim_time_period AS dim_time_period 
+LEFT JOIN {data_source}.dim_time_period AS dim_time_period 
   ON fact.time_period_id = dim_time_period.id
 WHERE fact.org_id IN ({org_id})
   AND fact.time_period_id IN (109) -- Inferred as YTD from default rules
@@ -487,14 +452,14 @@ SELECT
   DATE(fact.reported_date) AS Fact__reporteddate,
   SUM(fact.values) AS Fact__valuesSum,
   SUM(fact.denomValue) AS Fact__volumeSum
-FROM `plexus-336107.plexusDataDev.fact_*` AS fact
-LEFT JOIN plexus-336107.plexusDataDev.dim_product AS dim_product ON fact.product_id = dim_product.id
+FROM `{data_source}.fact_*` AS fact
+LEFT JOIN {data_source}.dim_product AS dim_product ON fact.product_id = dim_product.id
 WHERE fact.org_id IN ({org_id})
   AND fact.time_period_id IN (108) -- Inferred as Monthly from Price rule
-  AND fact.data_type_id_measure_id IN ('{data_type_id}+110')
+  AND fact.data_type_id_measure_id IN ("{data_type_id}+110")
   AND DATE(`fact`.reported_date) IN ("{reported_data_end}")
-  AND dim_product.ph_5 IN ('GOODY')
-  AND dim_product.ph_2 IN ('TUNA')
+  AND dim_product.ph_5 IN ("GOODY")
+  AND dim_product.ph_2 IN ("TUNA")
 GROUP BY 1,2,3
 ORDER BY 1 ASC
 ",

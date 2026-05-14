@@ -21,7 +21,7 @@ try:
     try:
         lc_prompt = prompt.get_langchain_prompt()
         print(f"Langchain prompt type: {type(lc_prompt)}")
-        print(f"Input variables: {lc_prompt.input_variables}")
+        
     except Exception as e:
         print(f"Failed to get langchain prompt: {e}")
         

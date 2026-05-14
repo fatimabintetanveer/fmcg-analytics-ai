@@ -5,6 +5,7 @@ from langfuse import observe
 from app.core.clients import run_query, langfuse_client
 from app.services.sql_service import generate_sql
 from app.services.calc_service import calculate_metrics
+from app.services.entity_service import fuzzy_search_engine
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +17,21 @@ def ask_question(question: str, org_id: int, data_type_id: int, reported_data_en
     success = 0
     
     try:
+        # Extract entities using the Fuzzy Search Engine
+        logger.info("Extracting and resolving entities via Fuzzy Search Engine...")
+        resolved_entities = fuzzy_search_engine.run(question)
+        
         for attempt in range(max_retries + 1):
             # On the first attempt, last_error is None. On retries, we pass the error back to the LLM.
             logger.info(f"Generating SQL (Attempt {attempt + 1}/{max_retries + 1})")
-            sql_response = generate_sql(question, org_id, data_type_id, reported_data_end, error_message=last_error)
+            sql_response = generate_sql(
+                question, 
+                org_id, 
+                data_type_id, 
+                reported_data_end, 
+                resolved_entities=resolved_entities,
+                error_message=last_error
+            )
             
             numerator_sql = sql_response.numerator_query
             denominator_sql = sql_response.denominator_query
@@ -82,11 +94,9 @@ def ask_question(question: str, org_id: int, data_type_id: int, reported_data_en
     
     finally:
         # Submit automatic scores to Langfuse
-        latency_ms = (time.time() - start_time) * 1000
         trace_id = langfuse_client.get_current_trace_id()
         
         if trace_id:
-            langfuse_client.create_score(trace_id=trace_id, name="sql_execution_success", value=success)
-            langfuse_client.create_score(trace_id=trace_id, name="latency_ms", value=latency_ms)
+            langfuse_client.create_score(trace_id=trace_id, name="query_success", value=float(success))
             langfuse_client.create_score(trace_id=trace_id, name="retry_count", value=attempt)
             langfuse_client.flush()

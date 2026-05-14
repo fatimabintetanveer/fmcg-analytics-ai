@@ -1,16 +1,26 @@
 from typing import Union
 import traceback
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from langfuse import observe
 from app.services.chat_service import ask_question
-from app.schemas.chat import QuestionRequest, ChatResponse, ErrorResponse, FeedbackRequest
+from app.services.entity_service import fuzzy_search_engine
+from app.schemas.chat import QuestionRequest, ChatResponse, ErrorResponse
 
 from app.core.clients import langfuse_client
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize the Fuzzy Search Engine and build indices before accepting requests
+    print("Starting up: Initializing Fuzzy Search Engine...")
+    fuzzy_search_engine.initialize()
+    yield
 
 app = FastAPI(
     title="FMCG Chat API",
     description="API for converting natural language FMCG questions into BigQuery SQL and executing them.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 @app.post("/ask", response_model=Union[ChatResponse, ErrorResponse])
@@ -38,16 +48,3 @@ def ask_endpoint(payload: QuestionRequest):
             message="An unexpected error occurred while processing your request."
         )
 
-@app.post("/feedback")
-def post_feedback(payload: FeedbackRequest):
-    """
-    Submits user feedback score to Langfuse.
-    """
-    langfuse_client.create_score(
-        trace_id=payload.trace_id,
-        name="user_feedback",
-        value=payload.score,
-        comment=payload.comment
-    )
-    langfuse_client.flush()
-    return {"status": "success", "message": "Feedback submitted successfully"}

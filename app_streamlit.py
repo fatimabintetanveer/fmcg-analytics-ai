@@ -42,10 +42,6 @@ st.markdown("""
 # --- SESSION STATE ---
 if "last_response" not in st.session_state:
     st.session_state.last_response = None
-if "feedback_submitted" not in st.session_state:
-    st.session_state.feedback_submitted = False
-if "selected_rating" not in st.session_state:
-    st.session_state.selected_rating = 5
 
 # --- HEADER ---
 st.title("📊 FMCG Insight AI")
@@ -71,7 +67,6 @@ with st.container():
                         )
                         if response.status_code == 200:
                             st.session_state.last_response = response.json()
-                            st.session_state.feedback_submitted = False 
                         else:
                             st.error(f"Error: {response.status_code}")
                     except Exception as e:
@@ -84,8 +79,12 @@ if st.session_state.last_response:
     data = st.session_state.last_response
     
     if "error" in data:
-        st.error(f"❌ {data.get('error')}")
-        st.info(data.get("details", ""))
+        if data.get("message"):
+            st.warning(f"⚠️ {data.get('message')}")
+        else:
+            st.error(f"❌ {data.get('error')}")
+        with st.expander("🔍 Technical Details"):
+            st.code(data.get("details", ""), language="text")
     else:
         # 1. Main Answer
         st.markdown('<div class="answer-card">', unsafe_allow_html=True)
@@ -95,48 +94,6 @@ if st.session_state.last_response:
         else:
             st.write("Data retrieved successfully, but no metrics were calculated.")
         st.markdown('</div>', unsafe_allow_html=True)
-
-        # 2. Feedback Workflow
-        st.write("### 📝 Rate this analysis")
-        if not st.session_state.feedback_submitted:
-            
-            # Step 1: Star Selection (Horizontal row)
-            st.write("Step 1: Select your rating")
-            cols = st.columns([1,1,1,1,1,6])
-            for i in range(1, 6):
-                # Highlight the selected star
-                btn_type = "primary" if st.session_state.selected_rating == i else "secondary"
-                if cols[i-1].button(f"{i} ⭐", key=f"rate_{i}", type=btn_type, use_container_width=True):
-                    st.session_state.selected_rating = i
-                    st.rerun()
-            
-            # Step 2: Comment Box 
-            st.write("Step 2: Add details")
-            user_comment = st.text_area("", key="feedback_comment", placeholder="What could be improved?", label_visibility="collapsed")
-            
-            # Step 3: Dedicated Submit Button
-            if st.button("Submit Feedback", type="primary"):
-                trace_id = data.get("trace_id")
-                if trace_id:
-                    try:
-                        res = requests.post(
-                            f"{API_URL}/feedback",
-                            json={
-                                "trace_id": trace_id, 
-                                "score": float(st.session_state.selected_rating), 
-                                "comment": user_comment if user_comment else f"Rated {st.session_state.selected_rating} stars"
-                            }
-                        )
-                        if res.status_code == 200:
-                            st.session_state.feedback_submitted = True
-                            st.success("Thank you! Feedback submitted.")
-                            st.rerun()
-                        else:
-                            st.error(f"Error: {res.text}")
-                    except Exception as e:
-                        st.error(f"Submission failed: {e}")
-        else:
-            st.success("✅ Thank you! Your feedback has been sent to Langfuse.")
 
         st.write("---")
 

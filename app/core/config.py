@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     LLM_MODEL: str = "gpt-4o-mini"
     LLM_TEMPERATURE: float = 0.0
+    USE_LOCAL_PROMPT: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",

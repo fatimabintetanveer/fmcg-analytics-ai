@@ -1,11 +1,12 @@
 import logging
+from typing import Optional
 from langfuse import observe
 from app.core.constants import COLUMN_MAPPING
 
 logger = logging.getLogger(__name__)
 
 @observe(as_type="span")
-def calculate_metrics(query_type: str, numerator_data: list, denominator_data: list = None):
+def calculate_metrics(query_type: str, numerator_data: list, denominator_data: Optional[list] = None):
     results = []
     
     if not numerator_data:
@@ -33,6 +34,9 @@ def calculate_metrics(query_type: str, numerator_data: list, denominator_data: l
                 metric_label = "Growth (%)"
                 
             elif query_type == "share":
+                if not denominator_data:
+                    raise ValueError("Denominator data is strictly required for share calculations.")
+                    
                 brand_val = row.get("Fact__valuesSum", 0)
                 total_val = denominator_data[0].get("Fact__valuesSum", 1)
    

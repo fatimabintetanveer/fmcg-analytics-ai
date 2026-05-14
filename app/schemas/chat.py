@@ -25,13 +25,12 @@ class ChatResponse(BaseModel):
     calculated_results: List[Dict[str, Any]]
     trace_id: Optional[str] = None
 
-class FeedbackRequest(BaseModel):
-    trace_id: str
-    score: float = Field(..., description="Score between 0 and 1")
-    comment: Optional[str] = None
-
 class ErrorResponse(BaseModel):
     error: str
     details: str
     message: Optional[str] = None
     traceback: Optional[str] = None
+
+class EntityExtraction(BaseModel):
+    product_entities: List[str] = Field(description="List of extracted product entities")
+    geography_entities: List[str] = Field(description="List of extracted geography entities")
